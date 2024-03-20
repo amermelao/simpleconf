@@ -9,10 +9,24 @@ import (
 	"github.com/spf13/viper"
 )
 
-type ConfValidator interface {
-	Valid() bool
-	Enabled() bool
-	setEnabled()
+type (
+	ConfValidator interface {
+		Valid() bool
+		Enabled() bool
+		setEnabled()
+	}
+
+	EnableConf struct {
+		enable bool
+	}
+)
+
+func (e *EnableConf) setEnabled() {
+	e.enable = true
+}
+
+func (e EnableConf) Enabled() bool {
+	return e.enable
 }
 
 var ErrInvalidConfiguration = errors.New("invalid configuration")
@@ -50,23 +64,19 @@ func getType(myvar interface{}) string {
 	}
 }
 
-type EnableConf struct {
-	enable bool
-}
+type (
+	readKeyConfiguration func(v ConfValidator) error
+	auxReader            func(readKeyConfiguration) error
+)
 
-func (e *EnableConf) setEnabled() {
-	e.enable = true
-}
+var envPrefix string
 
-func (e EnableConf) Enabled() bool {
-	return e.enable
+func SetEnvPrefix(s string) {
+	envPrefix = s
 }
-
-type readKeyConfiguration func(v ConfValidator) error
-type auxReader func(readKeyConfiguration) error
 
 func ReadConfiguration(f ...auxReader) error {
-	viper.SetEnvPrefix("truckvault")
+	viper.SetEnvPrefix(envPrefix)
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
