@@ -13,6 +13,7 @@ type (
 	ConfValidator interface {
 		Valid() bool
 		Enabled() bool
+		FailWhenMissing() bool
 		setEnabled()
 	}
 
@@ -29,7 +30,16 @@ func (e EnableConf) Enabled() bool {
 	return e.enable
 }
 
-var ErrInvalidConfiguration = errors.New("invalid configuration")
+func (e EnableConf) FailWhenMissing() bool {
+	return false
+}
+
+var (
+	ErrInvalidConfiguration     = errors.New("invalid configuration")
+	FuncErrMissingConfiguration = func(name string) error {
+		return fmt.Errorf("missing conf key configuration: %s", name)
+	}
+)
 
 func readKey(conf ConfValidator) error {
 	keyName := strings.ToLower(getType(conf))
@@ -37,6 +47,8 @@ func readKey(conf ConfValidator) error {
 	if viper.IsSet(keyName) {
 		conf.setEnabled()
 		return readSetConfig(conf, keyName)
+	} else if conf.FailWhenMissing() {
+		return FuncErrMissingConfiguration(keyName)
 	} else {
 		return nil
 	}
